@@ -1,0 +1,79 @@
+解析ARC原理
+此前一直提到ARC功能，本文做详细介绍。
+ARC作为一个编译时功能，不能替代开发者申请或释放内存，这些都是运行时动作，而是在编译时优化内存管理代码，自动补充释放内存的逻辑。因此，ARC功能不依赖运行时SDK，开发者升级IDE后即可开启ARC功能，并编译出兼容低版本SDK的应用。
+一个开启了ARC的工程，所有的内存管理方法（release、retain和autorelease）都会被隐藏，禁止使用。此外，之前提到的autoreleasepool也被禁止由开发者显示定义。开启ARC以后，将增加两个新功能：弱指针（此前提到过的弱引用，避免循环引用造成的内存泄露）和内存进阶优化（编译时）。
+举例，有如下代码：
+ - (NSString*)greeting {
+     return [[NSString alloc] initWithFormat:@"Hi %@", bloke.name];
+}
+开启ARC功能，编译过程中，编译器将会优化为：
+- (NSString*)greeting {
+     return [[[NSString alloc] initWithFormat:@"Hi %@", bloke.name] autorelease];
+}
+自动在返回值调用autorelease，避免泄露问题。
+例如：
+@implementation Stack { NSMutableArray *_array; }
+- (id) init {
+	if (self = [super init]) {
+		_array = [NSMutableArray array];
+	}
+	return self;
+}
+- (void) push: (id) x {
+	[_array addObject: x];
+}
+- (id) pop {
+	id x = [_array lastObject];
+	[_array removeLastObject];
+	return x;
+}
+ARC会自动把 _array 加retain
+@implementation Stack { NSMutableArray *_array; }
+- (id) init {
+	if (self = [super init]) {
+		_array = [[NSMutableArray array] retain];
+	}
+	return self;
+}
+- (void) push: (id) x {
+	[_array addObject: x];
+}
+- (id) pop {
+	id x = [[_array lastObject] retain];
+	[_array removeLastObject];
+	return [x autorelease];
+}
+- (void) dealloc { [_array release]; [super dealloc]; }
+@end
+这个例子里：
+[NSMutableArray array]方法提供的是一个autorelease的对象，因此，ARC给他加一个retain，保证在Stack的生命周期内_array是存活的。但仅仅加一个retain，就导致了泄漏，所以在dealloc中要加一个 [_array release]。
+在pop方法中调用一次 removeLastObject，是为了避免当还有其他引用指向他的时候，无法被释放，只是一个以防万一的做法，ARC很谨慎。
+pop方法中对拿出来那个x的retain和autorelease，指向x的往往是一个弱引用，所以retain一把，避免刚拿出来就挂掉了。
+另外ARC还有一个潜规则是需要注意的，就是关于方法名的前缀关键词。有这么几个词，如果出现在方法名的前边，会造成返回值的不同。
+alloc、copy、init、mutableCopy、new
+举例子：
+- (NSString*) serial {
+	return _serial;
+}
+ARC处理后：
+ - (NSString*) serial {
+	NSString *returnValue = [_serial retain];
+	return [returnValue autorelease];
+}
+但这样定义：
+- (NSString*) newSerial {
+	return _serial;
+}
+ARC将会做不同的处理：
+ - (NSString*) newSerial {
+	NSString *returnValue = [_serial retain];
+	return returnValue;
+}
+因为newSerial是以new开头的，所以返回值 没有autorelease。其他的关键词，可以去翻官方文档去查看各自详细的说明。
+通过这几个简单的例子，可以看出ARC的工作原理。ARC可以一定程度的把开发者从让人崩溃的内存管理中解放出来，但也会带来很多问题，比如，静态分析在这种情况下就没法工作了。所以使用ARC要遵守四条规则：
+1，不访问内存方法。包括 retain、release和autorelease，不调用，不实现，完全交给编译器去处理，事实上IDE也不允许开发者访问。
+2，不再C结构中出现NSObject指针。ARC的管理优化是针对NSObject，对于C结构和NSObject混合的代码无法胜任。所以建议直接定义一个NSObject，替代C结构。
+3，不用 id <-> void * 的互转。编译器必须要接收到void *是否被引用，而且新的编译器会转换Objective-C和Core-Fondation-Style对象。
+4，不定义 AutoreleasePool对象，使用@autoreleasepool标签。
+开启ARC功能，遵循规则进行编码，可以减少很多管理内存的精力，却是是一个非常不错的选择。而ARC和手动管理相比可能会出现空间释放不及时的问题，但可以通过强制断开强指针缓解这一情况。
+要获取更多的ARC使用技巧，可以参考官方文档和Apple WWDC的ARC相关Session。对于编码过程中遇到的问题，可以到SegmentFault.com参与讨论，像其他开发者提问。

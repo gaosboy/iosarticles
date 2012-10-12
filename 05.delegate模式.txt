@@ -1,0 +1,174 @@
+# Delegation模式
+
+在苹果的[《Cocoa Fundamentals Guide》][1]提到,他们在Cocoa这个开发环境中广泛使用了[设计模式][2]。
+
+> Many of the architectures and mechanisms of the Cocoa environment make effective use of design patterns: abstract designs that solve recurring problems in a particular context. 
+
+[Delegation][3]是其中非常重要的一种设计模式。如果你的编程背景没有接触过[设计模式][2]。对于理解iOS开发过程中用到的[Delegation][3]模式可能会感到比较困难。
+
+## 什么是Delegation模式
+
+Delegatation中文翻译叫做“委托”。顾名思义Delegation模式就是一个对象将一些行为`委托`另一个对象来完成。
+
+> 在委托模式中，有两个对象参与处理同一个请求，接受请求的对象将请求委托给另一个对象来处理。
+> 
+> ___[via wikipedia][2]___
+
+打个比方：你要寄一个快递，那么你只要把这件事委托给快递公司去做就好了，你只需要添好一个快递单，你不用管快递公司事用什么方式，经过那些流程把快递送到别人手上的。你只要关注这个快递有没有送成功就可以了。
+
+## Cocoa框架中的Delegate
+
+在Cocoa的Delegation模式中，委托人往往是框架中的对象，代理人往往是视图控制器中的对象。
+
+拿最常用到的UITableView举例。首先要申明成为代理人：
+
+	@interface ExampleViewController<UITableViewDelegate,UITableViewDataSource>
+	@end
+
+并且把代理人设成自己：
+
+	- (void)viewDidLoad
+	{
+	    [super viewDidLoad];
+	    self.tableView.delegate = self;
+	    self.tableView.dataSource = self;
+	}
+
+_注意上面的UITableView的dataSource也是一个Delegate。_
+
+然后在`@implementation`中把各种代理方法实现：
+
+	//设置tableView中section的数量
+	- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+	    return 1;
+	}
+	//设置每一个section中cell的数量
+	- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+	    return 2;
+	}
+	//定义每个cell的对象
+	- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+	    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
+	    
+	    if (cell == nil) {
+	        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"cell"];
+	        cell.textLabel.text = [NSString stringWithFormat:@"row %d",indexPath.row];
+	    }
+	    
+	    return cell;
+	}
+	//设置点击不同cell时候的动作
+	- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+	    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+	    
+	    NSLog(@"row:%d",indexPath.row);
+	}
+
+## 自定义Delegate
+
+我们还是用前面快递的比方来做一个简单的例子。
+
+首先我们定一个协议：
+
+	@protocol ExpressDelegate <NSObject>
+	
+	@required//required表示协议中必须实现的方法
+	- (void)send:(id)something to:(NSString*)address;//所有快递都支持普通的寄送方式
+	
+	@optional//optional表示协议中的可选方法
+	- (void)letOtherSidePaySend:(id)something to:(NSString*)address;//货到付款方式不是所有快递都支持
+	
+	@end
+
+然后我们定义两家快递公司。
+一家是顺丰：
+
+	@interface SFExpress : NSObject <ExpressDelegate>
+	@end
+	
+	@implementation SFExpress
+	
+	- (void)send:(id)something to:(NSString *)address {
+	    NSLog(@"我们用＊飞机＊把您的%@送到%@",something,address);
+	}
+	
+	- (void)letOtherSidePaySend:(id)something to:(NSString *)address {
+	    NSLog(@"我们用＊飞机＊把您的%@送到%@,这个订单采用货到付款",something,address);
+	}
+	
+	@end
+
+还有一家申通：
+
+	@interface STOExpress : NSObject <ExpressDelegate>
+	@end
+	
+	@implementation STOExpress
+	
+	- (void)send:(id)something to:(NSString *)address {
+	        NSLog(@"我们用＊火车＊把您的%@送到%@",something,address);
+	}
+	
+	@end
+	
+_注意上面两家快递公司都实现了`send:to:`这个普通寄送的方式（因为这个方法是required的，如果不实现在xcode中会有警告的），他们的寄送方式是不一样的，顺丰走的是飞机，申通走火车的。同时顺丰还支持`letOtherSidePaySend:to`这种货到付款的方式。_
+
+然后我们来定义一个客户：
+
+	@interface Customer : NSObject
+	
+	- (void)sendSomething;
+	
+	@property (nonatomic,strong) id<ExpressDelegate> express;
+	@property (nonatomic,strong) id something;
+	@property (nonatomic,strong) NSString *address;
+	@end
+	
+	@implementation Customer
+	
+	- (void)dealloc {
+	    self.express = nil;
+	}
+	
+	- (void)sendSomething {
+	    
+	    if ([self.express respondsToSelector:@selector(letOtherSidePaySend:to:)]) {//首先判断快递公司是否支持货到付款，如果支持优先选择货到付款的方式
+	        [self.express letOtherSidePaySend:self.something to:self.address];
+	    } else {
+	        [self.express send:self.something to:self.address];
+	    }
+	}
+	
+	@end
+
+然后我们找真人来发快递吧！
+Agassi同学要把一些香蕉发到杭州西湖区，他选择顺风快递：
+
+    Customer *Agassi = [[Customer alloc] init];
+    Agassi.express = [[SFExpress alloc] init];
+    Agassi.something = @"香蕉";
+    Agassi.address = @"杭州西湖";
+    [Agassi sendSomething];
+    
+**结果是：`我们用＊飞机＊把您的香蕉送到杭州西湖,这个订单采用货到付款`**
+
+Vivian同学要把一些月饼送到西安，她用申通快递：
+
+    Customer *vivian = [[Customer alloc] init];
+    vivian.express = [[STOExpress alloc] init];
+    vivian.something = @"月饼";
+    vivian.address = @"陕西西安";
+    [vivian sendSomething];
+    
+**结果是：`我们用＊火车＊把您的月饼送到陕西西安`**
+
+## 讨论
+
+当不知道一个功能的具体实现，由不知道谁来实现。这个时候可先把这个功能委托出去。这个在多人协作编程的时候非常重要。
+
+这样可以是耦合变的松散，扩展开放，修改关闭的代码才是好代码。
+
+
+[1]: http://developer.apple.com/library/ios/#DOCUMENTATION/Cocoa/Conceptual/CocoaFundamentals/CocoaDesignPatterns/CocoaDesignPatterns.html "Cocoa Design Patterns"
+[2]: http://zh.wikipedia.org/wiki/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F_(%E8%AE%A1%E7%AE%97%E6%9C%BA) "Design Patterns"
+[3]: http://zh.wikipedia.org/zh/%E5%A7%94%E6%89%98%E6%A8%A1%E5%BC%8F

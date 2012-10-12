@@ -1,0 +1,82 @@
+了解iOS内存管理
+iOS内存管理一直是iOS工程师比较头疼的一个问题，Objective-C的内存需要由开发者和系统共同控制，虽然在2011年LLVM3.0（取代gcc）编译器中首次提供了ARC（一个帮助开发者管理内存空间的功能），但这仍然是一套复杂的规则，实际使用中仍然需要非常谨慎。
+iOS系统中的内存分为三段Text、Stack（栈）和Heap（堆），Text段存放运行时代码，Stack段供编译时申请，Heap段供运行时申请。
+iOS的框架中所有对象都是NSObject的子类，每个对象都有一个非常重要的属性 retainCount，称之为Reference Count（引用计数）是用来标记对象指向内存区域生命周期的一个计数器。上文提到过的ARC就是Automatic Reference Counting的简写，是自动管理引用计数的功能，在后面的文章中详细介绍该功能。
+编译时，硬编码的数据（如：NSString *str = @"I am a NSString in Stack.";）会直接申请空间，存入Stack段。这些对象指向的内存是编译时就确定的，在运行时不会发生变化，引用计数是UNIX_MAX，最大无符号整数。
+非硬编码数据的对象（如：NSString *str = [[NSString alloc] initWithFormat:@"%@", @"I am a NSString in Heap."];）会在运行时动态创建，申请Heap段的空间。指向的这段内存引用计数为1，在运行时引用计数可以被加或减。当一段指向某段内存的所有对象引用计数被标记为0时，这段内存可以被系统回收。还有一种特殊情况，某对象创建后其retainCount大于1，这是因为在一些确定情况下（如：NSDictionary *dict = [[NSDictionary alloc] init]; 创建一个空字典），系统会复用内存。也就是说，当创建这样的一个对象，对象指向的是一块已申请的空间，而变化的只是这段空间的引用计数加1。
+在iOS应用的编码过程中：
+1，管理新对象
+	创建一个新对象分两种，初始化和复制。初始化一个对象，有两类方法可供选择：
+	直接返回初始化的对象，开发者同时要关注何时释放，此类方法一般先通过alloc、new等打头的方法申请空间，然后调用init打头的构造方法（如：NSString *str = [[NSString alloc] initWithString:@"I am a string."];）。使用这类方法创建的对象，一定要视具体情况调用release方法释放空间（实际release方法是做引用计数减1的操作），否则就会出现内存泄露。在构造方法中创建的对象，就要在析构方法中调用release；临时使用创建的对象，在使用完成后调用release。
+	另一类返回带有autorelease（接下来具体介绍）的对象，开发者要关注一个成为autorelease block的空间，这些方法一般是静态方法，直接以类名简写打头（如：NSString *str = [NSString stringWithString:@"I am a string."];）后直接调用新建对象的autorelease方法（如：NSString *str = [[[NSString alloc] initWithString:@"I am a string."] autorelease]）。这样创建的对象是不需要开发者调用release释放的。但开发者需要定义一个autorelease block的空间，当空间生命周期结束，系统会自动释放该对象指向的空间。autorelease的具体用法和原理在下面介绍。
+	复制一个对象也分为两种：
+	直接在原空间上引用计数加1。我们知道，引用计数是用来记录该空间有多少应用，可否被释放的，这种方法就是在原空间上给引用计数加1（如：NSString *str = [strExists retain];），表示增加一个引用。
+	另一种方式就是某块空间（如：NSString *str = [strExists copy];或NSString *str = [strExists mutableCopy];），这块新空间的引用计数为1。
+	复制对象的两种方法都可以使用autorelease控制释放，或开发者使用release方法手动释放。
+2，autorelease
+	autorelease的两种用法已经介绍过，定义autorelease block非常重要，因为这决定一块空间延迟多久被才会被释放。首先，每一个iOS应用的main函数中就已经定义了一个autorelease block，生命周期就是这个应用的存活周期。
+int main(int argc, char *argv[])
+{
+    @autoreleasepool {
+        return UIApplicationMain(argc, argv, nil, NSStringFromClass([YourAppDelegate class]));
+    }
+}
+	在开发者的自定义代码中，也需要如此定义autorelease block。例如在一个for循环中要重复初始化一个临时字典对象，而这些对象只在该循环体内有效。所以，就要在for循环中定义这个autorelease block，使这些临时字典在循环结束后被释放。
+for (int i=0; i<10; i++)
+{
+    @autoreleasepool {
+		NSDictionary *dict = [[[NSDictionary alloc] init] autorelease];
+	}
+}
+	autorelease的管用场景一般是，返回非显示申请空间的数据对象。例如：静态方法返回的数据对象，使用者通过静态方法得到数据对象，所以不会去手动释放；私有方法返回数据对象，类本身内的初始化调用，没有显示申请空间，所以使用autorelease。
+3，附属方法
+	Accessor Methods（附属方法）主要用来管理实例变量。使用附属方法管理实例变量可以简化内存操作，并且系统会协助开发者保证线程安全。
+	定义变量时使用 @property 标示，并指定其属性，例如要定义个NSString类型的实例变量，允许多线程操作，不要求线程安全，赋值可以直接引用计数加1，不需要复制对象。代码如下：
+@interface Demo
+@property (nonatomic, retain) NSString *str;
+@end
+	这样，就完成了一个实例变量的声明，要生成附属方法还需要在实现中通知编译器，如下：
+@implementation Demo
+@synthesize str = _str;
+@end
+	一个带附属方法的实例变量定义。编译器会根据这些信息生成两个方法：
+- (void)setStr:(NSString *)aStr
+{
+	[aStr retain];
+	[_str release];
+	_str = aStr;
+}
+
+- (NSString *)str
+{
+	return _str;
+}
+	开发者就可以通过这两个方法控制实例变量str。但是有一点要注意，在init方法中不要使用附属方法，在init方法中，要初始化一个变量，就用变量名，并且在dealloc方法中调用release方法释放。
+- (id)init
+{
+	self = [super init];
+	if (self) {
+		_str = [[NSString alloc] initWithFormat:@"%d", 0];
+	}
+	return self;
+}
+- (void)dealloc
+{
+	[_str release];
+	[super dealloc];
+}
+	使用附属方法最关键的是了解声明变量时赋予它的属性，这些属性包括：
+	控制线程安全的：nonatomic和atomic。线程安全属性，会使这个实例变量在调用过程中加上一个同步锁，在某些情况下性能较差。
+	控制内存空间的：assign、copy和retain。如以上介绍创建对象，这些属性指定的是setter方法对参数的处理方式。assign表示简单的指向，不进行引用计数操作。
+	控制强引用与否的strong和unsafe_unretained。strong是强引用，几乎相当于retain，unsafe_untained是弱引用几乎相当于assign，弱引用将在接下来具体介绍。
+	控制访问权限的readonly和readwrite。默认的变量是读写权限，可以使用readonly使其只读。
+	可以指定setter和getter方法的setter=和getter=。getter和setter的默认格式如上示例代码，通过这两个方法可以自定义方法名。
+4，使用弱引用
+	此前一直提到的引用计数就是某块内存的强引用数量，只有当没有强引用指向时，内存才会被回收。这样就出现一个问题：循环引用。例如：某对象A有属性B，A指向B是一个强引用，B也有一个强引用指向C，而C有一个强引用指向C，表示其属于A。如此ABC之间就发生了循环引用，将会造成内存无法释放。这种情况下，就需要使用弱引用，建议所有反向标记从属关系的引用使用弱引用。即，C指向A使用弱引用。
+5，关注对象包涵关系
+	摧毁对象释放空间的时候往往对象之间包涵关系，例如：一个NSArray对象A，有2个元素，B对象和C对象。当对摧毁A的时候，首先应该做一个操作，移除A中的全部元素（[A removeAllObjects];），在调用release方法。另一个场景就是在自定义对象中，实现dealloc方法，在dealloc方法中释放所有的强引用，并调用父类的dealloc。
+6，管理资源对象
+	在iOS系统中，资源对象，例如：网络连接，文件句柄，是一类特殊的对象，其特殊性表现在：1，多线程调用；2，多对象共享；3，异步调用。
+	摧毁此类资源对象的时机需要特别谨慎，不能在调用他的类的dealloc方法中做摧毁操作释放空间。这样做，非常容易出现，当前线程或对象使用完资源，马上释放掉，而其他线程或对象再次调用时，就会报错。
+	正确的做法是，在确认该资源完成其使命，不会再有调用的情况下，再对其进行释放。一般这个时机可以使一个autorelease block结束，或一次异步操作回调完成，甚至是整个程序执行完成。
+以上介绍的只是原理性和技巧性的东西，能够使开发者尽量少走弯路，少犯低级错误，尽快上手。但开发iOS应用的过程中，一定还会遇到各种各样的问题，诸如：大量图片载入，多对象，等等。内存管理本来就是一个具体问题具体分析的事，大家可以到SegmentFault.com与更多开发者讨论，解决问题。

@@ -1,0 +1,207 @@
+<!DOCTYPE html>  
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>05.delegate模式</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+/* 
+   This document has been created with Marked.app <http://markedapp.com>, Copyright 2011 Brett Terpstra
+   Please leave this notice in place, along with any additional credits below.
+   ---------------------------------------------------------------
+   Title: GitHub
+   Author: Brett Terpstra
+   Description: Github README style. Includes theme for Pygmentized code blocks.
+*/
+html,body{color:black}*{margin:0;padding:0}body{font:13.34px helvetica,arial,freesans,clean,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.4;padding:3px;background:#fff;border-radius:3px;-moz-border-radius:3px;-webkit-border-radius:3px}p{margin:1em 0}a{color:#4183c4;text-decoration:none}#wrapper{background-color:#fff;border:3px solid #eee!important;padding:0 30px;margin:15px}#wrapper{font-size:14px;line-height:1.6}#wrapper>*:first-child{margin-top:0!important}#wrapper>*:last-child{margin-bottom:0!important}h1,h2,h3,h4,h5,h6{margin:0;padding:0}h1{margin:15px 0;padding-bottom:2px;font-size:24px;border-bottom:1px solid #eee}h2{margin:20px 0 10px 0;font-size:18px}h3{margin:20px 0 10px 0;padding-bottom:2px;font-size:14px;border-bottom:1px solid #ddd}h4{font-size:14px;line-height:26px;padding:18px 0 4px;font-weight:bold;text-transform:uppercase}h5{font-size:13px;line-height:26px;padding:14px 0 0;font-weight:bold;text-transform:uppercase}h6{color:#666;font-size:14px;line-height:26px;padding:18px 0 0;font-weight:normal;font-variant:italic}hr{background:transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAECAYAAACtBE5DAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBNYWNpbnRvc2giIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6OENDRjNBN0E2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6OENDRjNBN0I2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo4Q0NGM0E3ODY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo4Q0NGM0E3OTY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PqqezsUAAAAfSURBVHjaYmRABcYwBiM2QSA4y4hNEKYDQxAEAAIMAHNGAzhkPOlYAAAAAElFTkSuQmCC) repeat-x 0 0;border:0 none;color:#ccc;height:4px;margin:20px 0;padding:0}#wrapper>h2:first-child,#wrapper>h1:first-child,#wrapper>h1:first-child+h2{border:0;margin:0;padding:0}#wrapper>h3:first-child,#wrapper>h4:first-child,#wrapper>h5:first-child,#wrapper>h6:first-child{margin:0;padding:0}h4+p,h5+p,h6+p{margin-top:0}li p.first{display:inline-block}ul,ol{margin:15px 0 15px 25px}ul li,ol li{margin-top:7px;margin-bottom:7px}ul li>*:last-child,ol li>*:last-child{margin-bottom:0}ul li>*:first-child,ol li>*:first-child{margin-top:0}#wrapper>ul,#wrapper>ol{margin-top:21px;margin-left:36px}dl{margin:0;padding:20px 0 0}dl dt{font-size:14px;font-weight:bold;line-height:normal;margin:0;padding:20px 0 0}dl dt:first-child{padding:0}dl dd{font-size:13px;margin:0;padding:3px 0 0}blockquote{margin:14px 0;border-left:4px solid #ddd;padding-left:11px;color:#555}table{border-collapse:collapse;margin:20px 0 0;padding:0}table tr{border-top:1px solid #ccc;background-color:#fff;margin:0;padding:0}table tr:nth-child(2n){background-color:#f8f8f8}table tr th,table tr td{border:1px solid #ccc;text-align:left;margin:0;padding:6px 13px}img{max-width:100%;height:auto}code,tt{margin:0 2px;padding:2px 5px;white-space:nowrap;border:1px solid #ccc;background-color:#f8f8f8;border-radius:3px;-moz-border-radius:3px;-webkit-border-radius:3px;font-size:12px}pre>code{margin:0;padding:0;white-space:pre;border:0;background:transparent;font-size:13px}.highlight pre,pre{background-color:#f8f8f8;border:1px solid #ccc;font-size:13px;line-height:19px;overflow:auto;padding:6px 10px;border-radius:3px;-moz-border-radius:3px;-webkit-border-radius:3px}#wrapper>pre,#wrapper>div.highlight{margin:10px 0 0}pre code,pre tt{background-color:transparent;border:0}#wrapper{background-color:#fff;border:1px solid #cacaca;padding:30px}.poetry pre{font-family:Georgia,Garamond,serif!important;font-style:italic;font-size:110%!important;line-height:1.6em;display:block;margin-left:1em}.poetry pre code{font-family:Georgia,Garamond,serif!important}sup,sub,a.footnote{font-size:1.4ex;height:0;line-height:1;vertical-align:super;position:relative}sub{vertical-align:sub;top:-1px}@media print{body{background:#fff}img,pre,blockquote,table,figure{page-break-inside:avoid}#wrapper{background:#fff;border:0}code{background-color:#fff;color:#444!important;padding:0 .2em;border:1px solid #dedede}pre code{background-color:#fff!important;overflow:visible}pre{background:#fff}}@media screen{body.inverted,.inverted #wrapper,.inverted hr .inverted p,.inverted td,.inverted li,.inverted h1,.inverted h2,.inverted h3,.inverted h4,.inverted h5,.inverted h6,.inverted th,.inverted .math,.inverted caption,.inverted dd,.inverted dt,.inverted blockquote{color:#eee!important;border-color:#555}.inverted td,.inverted th{background:#333}.inverted pre,.inverted code,.inverted tt{background:#444!important}.inverted h2{border-color:#555}.inverted hr{border-color:#777;border-width:1px!important}::selection{background:rgba(157,193,200,.5)}h1::selection{background-color:rgba(45,156,208,.3)}h2::selection{background-color:rgba(90,182,224,.3)}h3::selection,h4::selection,h5::selection,h6::selection,li::selection,ol::selection{background-color:rgba(133,201,232,.3)}code::selection{background-color:rgba(0,0,0,.7);color:#eee}code span::selection{background-color:rgba(0,0,0,.7)!important;color:#eee!important}a::selection{background-color:rgba(255,230,102,.2)}.inverted a::selection{background-color:rgba(255,230,102,.6)}td::selection,th::selection,caption::selection{background-color:rgba(180,237,95,.5)}.inverted{background:#0b2531}.inverted #wrapper,.inverted{background:rgba(37,42,42,1)}.inverted a{color:rgba(172,209,213,1)}}.highlight .c{color:#998;font-style:italic}.highlight .err{color:#a61717;background-color:#e3d2d2}.highlight .k{font-weight:bold}.highlight .o{font-weight:bold}.highlight .cm{color:#998;font-style:italic}.highlight .cp{color:#999;font-weight:bold}.highlight .c1{color:#998;font-style:italic}.highlight .cs{color:#999;font-weight:bold;font-style:italic}.highlight .gd{color:#000;background-color:#fdd}.highlight .gd .x{color:#000;background-color:#faa}.highlight .ge{font-style:italic}.highlight .gr{color:#a00}.highlight .gh{color:#999}.highlight .gi{color:#000;background-color:#dfd}.highlight .gi .x{color:#000;background-color:#afa}.highlight .go{color:#888}.highlight .gp{color:#555}.highlight .gs{font-weight:bold}.highlight .gu{color:#800080;font-weight:bold}.highlight .gt{color:#a00}.highlight .kc{font-weight:bold}.highlight .kd{font-weight:bold}.highlight .kn{font-weight:bold}.highlight .kp{font-weight:bold}.highlight .kr{font-weight:bold}.highlight .kt{color:#458;font-weight:bold}.highlight .m{color:#099}.highlight .s{color:#d14}.highlight .na{color:#008080}.highlight .nb{color:#0086b3}.highlight .nc{color:#458;font-weight:bold}.highlight .no{color:#008080}.highlight .ni{color:#800080}.highlight .ne{color:#900;font-weight:bold}.highlight .nf{color:#900;font-weight:bold}.highlight .nn{color:#555}.highlight .nt{color:#000080}.highlight .nv{color:#008080}.highlight .ow{font-weight:bold}.highlight .w{color:#bbb}.highlight .mf{color:#099}.highlight .mh{color:#099}.highlight .mi{color:#099}.highlight .mo{color:#099}.highlight .sb{color:#d14}.highlight .sc{color:#d14}.highlight .sd{color:#d14}.highlight .s2{color:#d14}.highlight .se{color:#d14}.highlight .sh{color:#d14}.highlight .si{color:#d14}.highlight .sx{color:#d14}.highlight .sr{color:#009926}.highlight .s1{color:#d14}.highlight .ss{color:#990073}.highlight .bp{color:#999}.highlight .vc{color:#008080}.highlight .vg{color:#008080}.highlight .vi{color:#008080}.highlight .il{color:#099}.highlight .gc{color:#999;background-color:#eaf2f5}.type-csharp .highlight .k{color:#00F}.type-csharp .highlight .kt{color:#00F}.type-csharp .highlight .nf{color:#000;font-weight:normal}.type-csharp .highlight .nc{color:#2b91af}.type-csharp .highlight .nn{color:#000}.type-csharp .highlight .s{color:#a31515}.type-csharp .highlight .sc{color:#a31515}
+</style>
+
+</head>
+<body class="normal">
+  <div id="wrapper">
+      <h1 id="delegation">Delegation模式</h1>
+
+<p>在苹果的<a href="http://developer.apple.com/library/ios/#DOCUMENTATION/Cocoa/Conceptual/CocoaFundamentals/CocoaDesignPatterns/CocoaDesignPatterns.html" title="Cocoa Design Patterns">《Cocoa Fundamentals Guide》</a>提到,他们在Cocoa这个开发环境中广泛使用了<a href="http://zh.wikipedia.org/wiki/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F_(%E8%AE%A1%E7%AE%97%E6%9C%BA)" title="Design Patterns">设计模式</a>。</p>
+
+<blockquote>
+<p>Many of the architectures and mechanisms of the Cocoa environment make effective use of design patterns: abstract designs that solve recurring problems in a particular context. </p>
+</blockquote>
+
+<p><a href="http://zh.wikipedia.org/zh/%E5%A7%94%E6%89%98%E6%A8%A1%E5%BC%8F">Delegation</a>是其中非常重要的一种设计模式。如果你的编程背景没有接触过<a href="http://zh.wikipedia.org/wiki/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F_(%E8%AE%A1%E7%AE%97%E6%9C%BA)" title="Design Patterns">设计模式</a>。对于理解iOS开发过程中用到的<a href="http://zh.wikipedia.org/zh/%E5%A7%94%E6%89%98%E6%A8%A1%E5%BC%8F">Delegation</a>模式可能会感到比较困难。</p>
+
+<h2 id="delegation">什么是Delegation模式</h2>
+
+<p>Delegatation中文翻译叫做“委托”。顾名思义Delegation模式就是一个对象将一些行为<code>委托</code>另一个对象来完成。</p>
+
+<blockquote>
+<p>在委托模式中，有两个对象参与处理同一个请求，接受请求的对象将请求委托给另一个对象来处理。</p>
+
+<p><strong><em><a href="http://zh.wikipedia.org/wiki/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F_(%E8%AE%A1%E7%AE%97%E6%9C%BA)" title="Design Patterns">via wikipedia</a></em></strong></p>
+</blockquote>
+
+<p>打个比方：你要寄一个快递，那么你只要把这件事委托给快递公司去做就好了，你只需要添好一个快递单，你不用管快递公司事用什么方式，经过那些流程把快递送到别人手上的。你只要关注这个快递有没有送成功就可以了。</p>
+
+<h2 id="cocoadelegate">Cocoa框架中的Delegate</h2>
+
+<p>在Cocoa的Delegation模式中，委托人往往是框架中的对象，代理人往往是视图控制器中的对象。</p>
+
+<p>拿最常用到的UITableView举例。首先要申明成为代理人：</p>
+
+<pre><code>@interface ExampleViewController&lt;UITableViewDelegate,UITableViewDataSource&gt;
+@end
+</code></pre>
+
+<p>并且把代理人设成自己：</p>
+
+<pre><code>- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    self.tableView.delegate = self;
+    self.tableView.dataSource = self;
+}
+</code></pre>
+
+<p><em>注意上面的UITableView的dataSource也是一个Delegate。</em></p>
+
+<p>然后在<code>@implementation</code>中把各种代理方法实现：</p>
+
+<pre><code>//设置tableView中section的数量
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    return 1;
+}
+//设置每一个section中cell的数量
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    return 2;
+}
+//定义每个cell的对象
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@&quot;cell&quot;];
+
+    if (cell == nil) {
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@&quot;cell&quot;];
+        cell.textLabel.text = [NSString stringWithFormat:@&quot;row %d&quot;,indexPath.row];
+    }
+
+    return cell;
+}
+//设置点击不同cell时候的动作
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+
+    NSLog(@&quot;row:%d&quot;,indexPath.row);
+}
+</code></pre>
+
+<h2 id="delegate">自定义Delegate</h2>
+
+<p>我们还是用前面快递的比方来做一个简单的例子。</p>
+
+<p>首先我们定一个协议：</p>
+
+<pre><code>@protocol ExpressDelegate &lt;NSObject&gt;
+
+@required//required表示协议中必须实现的方法
+- (void)send:(id)something to:(NSString*)address;//所有快递都支持普通的寄送方式
+
+@optional//optional表示协议中的可选方法
+- (void)letOtherSidePaySend:(id)something to:(NSString*)address;//货到付款方式不是所有快递都支持
+
+@end
+</code></pre>
+
+<p>然后我们定义两家快递公司。
+一家是顺丰：</p>
+
+<pre><code>@interface SFExpress : NSObject &lt;ExpressDelegate&gt;
+@end
+
+@implementation SFExpress
+
+- (void)send:(id)something to:(NSString *)address {
+    NSLog(@&quot;我们用＊飞机＊把您的%@送到%@&quot;,something,address);
+}
+
+- (void)letOtherSidePaySend:(id)something to:(NSString *)address {
+    NSLog(@&quot;我们用＊飞机＊把您的%@送到%@,这个订单采用货到付款&quot;,something,address);
+}
+
+@end
+</code></pre>
+
+<p>还有一家申通：</p>
+
+<pre><code>@interface STOExpress : NSObject &lt;ExpressDelegate&gt;
+@end
+
+@implementation STOExpress
+
+- (void)send:(id)something to:(NSString *)address {
+        NSLog(@&quot;我们用＊火车＊把您的%@送到%@&quot;,something,address);
+}
+
+@end
+</code></pre>
+
+<p><em>注意上面两家快递公司都实现了<code>send:to:</code>这个普通寄送的方式（因为这个方法是required的，如果不实现在xcode中会有警告的），他们的寄送方式是不一样的，顺丰走的是飞机，申通走火车的。同时顺丰还支持<code>letOtherSidePaySend:to</code>这种货到付款的方式。</em></p>
+
+<p>然后我们来定义一个客户：</p>
+
+<pre><code>@interface Customer : NSObject
+
+- (void)sendSomething;
+
+@property (nonatomic,strong) id&lt;ExpressDelegate&gt; express;
+@property (nonatomic,strong) id something;
+@property (nonatomic,strong) NSString *address;
+@end
+
+@implementation Customer
+
+- (void)dealloc {
+    self.express = nil;
+}
+
+- (void)sendSomething {
+
+    if ([self.express respondsToSelector:@selector(letOtherSidePaySend:to:)]) {//首先判断快递公司是否支持货到付款，如果支持优先选择货到付款的方式
+        [self.express letOtherSidePaySend:self.something to:self.address];
+    } else {
+        [self.express send:self.something to:self.address];
+    }
+}
+
+@end
+</code></pre>
+
+<p>然后我们找真人来发快递吧！
+Agassi同学要把一些香蕉发到杭州西湖区，他选择顺风快递：</p>
+
+<pre><code>Customer *Agassi = [[Customer alloc] init];
+Agassi.express = [[SFExpress alloc] init];
+Agassi.something = @&quot;香蕉&quot;;
+Agassi.address = @&quot;杭州西湖&quot;;
+[Agassi sendSomething];
+</code></pre>
+
+<p><strong>结果是：<code>我们用＊飞机＊把您的香蕉送到杭州西湖,这个订单采用货到付款</code></strong></p>
+
+<p>Vivian同学要把一些月饼送到西安，她用申通快递：</p>
+
+<pre><code>Customer *vivian = [[Customer alloc] init];
+vivian.express = [[STOExpress alloc] init];
+vivian.something = @&quot;月饼&quot;;
+vivian.address = @&quot;陕西西安&quot;;
+[vivian sendSomething];
+</code></pre>
+
+<p><strong>结果是：<code>我们用＊火车＊把您的月饼送到陕西西安</code></strong></p>
+
+<h2 id="">讨论</h2>
+
+<p>当不知道一个功能的具体实现，由不知道谁来实现。这个时候可先把这个功能委托出去。这个在多人协作编程的时候非常重要。</p>
+
+<p>这样可以是耦合变的松散，扩展开放，修改关闭的代码才是好代码。</p>
+    </div>
+</body>
+</html>

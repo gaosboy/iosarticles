@@ -1,0 +1,15 @@
+# 主流开发框架介绍 #
+
+- **[Three20/Nimbus][1]**
+- **[ASIHttpRequest][2]**
+- **[AFNetworking][3]**
+- **[SSZipArchive][4]**
+- **[MBProgressHUD][5]**
+- **[gh-unit][6]**
+- **[fmdb][7]**
+- **[JSONKit][8]**
+- **[EGOTableViewPullRefresh][9]**
+
+## 用Cocoapods管理依赖 ##
+
+使用的组件多了，手工管理容易比较麻烦。Cocoapods是一个很好的管理依赖的工具。它可以使你的工程看起来结构清晰。
